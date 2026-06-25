@@ -1,0 +1,25 @@
+//fichier au format jsonc (avec commentaires) interprété par VSCode
+{
+  "editor.formatOnSave": true,  //Formate le code automatiquement à chaque sauvegarde
+  "editor.rulers": [88], // ajoute une marque | au 88ème caractère
+  "python.defaultInterpreterPath": "./venv/bin/python", //Utilise le Python du venv local, pas celui du système
+  "python.formatting.provider": "black", //Black est le formateur Python choisi . Il applique des règles dans demander mon avis afin que le code de toute l'équipe ait la même forme
+  "python.linting.enabled": true,  //Active l'analyse statique du code
+  "python.linting.flake8Enabled": true, //Flake8 signale les erreurs de style/syntaxe Python
+  "files.associations": {    //Déclare quel langage vs quel extension de fichier
+    "*.html": "html",
+    "docker-compose*.yml": "yaml"
+  },
+  "yaml.schemas": {
+    "https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json": "docker-compose*.yml"   //Active l'autocomplétion/validation pour docker-compose via le schéma officiel
+  },
+  "gitlens.hovers.currentLine.over": "line",  //Au survol d'une ligne, GitLens affiche qui a écrit ce code (blame)
+  "git.autofetch": true,  //Git récupère les infos du dépôt distant automatiquement en arrière-plan
+  "git.confirmSync": false, //Supprime la confirmation avant un push/pull
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter"  //Surcharge : pour les fichiers Python, utilise spécifiquement Black
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode" //Surcharge : pour les fichiers Markdown, utilise Prettier
+  }
+}
