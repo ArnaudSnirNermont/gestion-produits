@@ -24,6 +24,7 @@ services:
     environment:  #DATABASE_URL est la chaîne de connexion SQLAlchemy : mysql+pymysql:// (dialecte + driver), suivi de utilisateur:motdepasse@hôte/nom_de_base. Le point crucial : @db — ce n'est pas une IP, c'est le nom du service défini plus haut. Docker Compose crée un réseau interne où chaque service est joignable par son nom (DNS interne automatique).
       DATABASE_URL: mysql+pymysql://flask_user:flask_pass@db/produits_db
       FLASK_ENV: production
+      SECRET_KEY: toto
     depends_on: #C'est la version « intelligente » de depends_on. Un simple depends_on: - db garantirait seulement que le conteneur db a démarré, pas qu'il est prêt à accepter des connexions (MariaDB met quelques secondes à s'initialiser). Avec condition: service_healthy, Flask attend que le healthcheck de db passe au vert avant de démarrer — ça évite l'erreur classique « connexion refusée » au premier lancement.
       db:
         condition: service_healthy

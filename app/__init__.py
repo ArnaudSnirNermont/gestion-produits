@@ -14,6 +14,8 @@ def create_app():
     ) #Configure l'URL de connexion à la base. os.environ.get("DATABASE_URL", "...") lit la variable d'environnement DATABASE_URL (celle définie dans docker-compose.yml pour le service flask), avec une valeur de secours si elle n'existe pas — utile en cas de tests en dehors de Docker
     
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False #Désactive un système de tracking de SQLAlchemy qui consomme de la mémoire inutilement (config recommandée par défaut)
+    
+    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key-a-changer") #obligé pour utiliser flash
 
     db.init_app(app) #Lie l'instance db créée plus haut à cette application Flask précise. C'est l'étape qui connecte réellement l'ORM à l'app — nécessaire car db = SQLAlchemy() seul ne fait encore rien tant qu'il n'est pas associé à une app via init_app.
 
