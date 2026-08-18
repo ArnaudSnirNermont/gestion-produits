@@ -1,6 +1,6 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request, flash, redirect, url_for
 #Importe Blueprint, le mécanisme Flask qui permet de regrouper des routes dans un module séparé plutôt que de tout mettre dans __init__.py — c'est ce qui structure une app Flask en modules réutilisables.
-
+from . import db
 from .models import Produit
 #Importe la classe Produit définie dans app/models.py. Le . signifie "depuis le package courant" (app/). C'est cet import qui permet d'utiliser Produit.query juste en dessous — et au passage, il a le même effet bénéfique que celui qu'on a ajouté dans __init__.py : il force l'enregistrement du modèle dans les métadonnées SQLAlchemy (donc techniquement, avec cette ligne présente, l'import explicite dans __init__.py devient redondant mais reste une sécurité utile si routes.py change un jour).
 
@@ -21,3 +21,19 @@ def liste():
     ]
     return jsonify(resultat)
     #jsonify convertit directement la liste de dictionnaires Python construite par compréhension en réponse JSON avec le bon Content-Type: application/json
+
+@main.route("/ajouter", methods=["POST"])
+def ajouter():
+    nom   = request.form.get("nom", "").strip()
+    prix  = request.form.get("prix", 0)
+    stock = request.form.get("stock", 0)
+
+    if not nom:
+        flash("Le nom est obligatoire.", "danger")
+        return jsonify({"Msg" :"Echec de l'ajout du produit"}, "error")
+
+    produit = Produit(nom=nom, prix=float(prix), stock=int(stock))
+    db.session.add(produit)
+    db.session.commit()
+    #flash(f"Produit « {nom} » ajouté avec succès.", "success")
+    return jsonify({"Produit ajouté avec succès" : f"{nom}"}, "success")
