@@ -3,7 +3,7 @@
   "editor.formatOnSave": true,  //Formate le code automatiquement à chaque sauvegarde
   "editor.rulers": [88], // ajoute une marque | au 88ème caractère
   "python.defaultInterpreterPath": "./venv/bin/python", //Utilise le Python du venv local, pas celui du système
-  "python.formatting.provider": "black", //Black est le formateur Python choisi . Il applique des règles dans demander mon avis afin que le code de toute l'équipe ait la même forme
+  "python.formatting.provider": "black", //Black est le formateur Python choisi . Il applique des règles sans demander mon avis afin que le code de toute l'équipe ait la même forme
   "python.linting.enabled": true,  //Active l'analyse statique du code
   "python.linting.flake8Enabled": true, //Flake8 signale les erreurs de style/syntaxe Python
   "files.associations": {    //Déclare quel langage vs quel extension de fichier
