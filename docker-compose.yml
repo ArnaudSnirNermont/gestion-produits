@@ -1,0 +1,43 @@
+version: '3.8' #3.8 supporte les fonctionnalités utilisées ici (notamment condition: service_healthy)
+
+services:
+  db:
+    image: mariadb:10.11  #Utilise l'image officielle MariaDB, version 10.11 figée (pas latest, pour éviter qu'une mise à jour surprise casse le projet)
+    restart: always #Si le conteneur crashe ou si la machine redémarre, Docker le relance automatiquement
+    environment: #Variables lues par l'image officielle MariaDB au tout premier démarrage pour s'auto-configurer : elle crée la base produits_db, crée l'utilisateur flask_user avec le mot de passe flask_pass et lui donne les droits sur cette base
+      MYSQL_ROOT_PASSWORD: rootpass #attention mots de passe à externaliser dans un fichier .env non versionné
+      MYSQL_DATABASE: produits_db
+      MYSQL_USER: flask_user
+      MYSQL_PASSWORD: flask_pass #définit le mot de passe du compte admin
+    volumes:
+      - db_data:/var/lib/mysql #monte le volume nommé db_data (déclaré tout en bas du fichier) sur /var/lib/mysql, le dossier où MariaDB stocke physiquement ses données. Sans cette ligne, toutes les données seraient perdues à chaque docker compose down — le volume garantit la persistance même si le conteneur est détruit et recréé.
+    healthcheck: #ligne exécutée périodiquement à l'intérieur du conteneur pour vérifier que MariaDB répond réellement (pas juste que le processus tourne, mais qu'il accepte des connexions). Toutes les 10 secondes (interval), avec 5 secondes max pour répondre (timeout), et jusqu'à 5 tentatives (retries) avant de considérer le service unhealthy. C'est ce statut healthy que le service flask va attendre plus bas
+      test: ["CMD", "healthcheck.sh", "--connect"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  flask:
+    build: .  #contrairement à db et nginx qui utilisent des images toutes faites, Flask utilise le fichier Dockerfile situé dans le dossier courant (.) : l'image est construite localement à partir du code de ce fichier
+    restart: always
+    environment:  #DATABASE_URL est la chaîne de connexion SQLAlchemy : mysql+pymysql:// (dialecte + driver), suivi de utilisateur:motdepasse@hôte/nom_de_base. Le point crucial : @db — ce n'est pas une IP, c'est le nom du service défini plus haut. Docker Compose crée un réseau interne où chaque service est joignable par son nom (DNS interne automatique).
+      DATABASE_URL: mysql+pymysql://flask_user:flask_pass@db/produits_db
+      FLASK_ENV: production
+    depends_on: #C'est la version « intelligente » de depends_on. Un simple depends_on: - db garantirait seulement que le conteneur db a démarré, pas qu'il est prêt à accepter des connexions (MariaDB met quelques secondes à s'initialiser). Avec condition: service_healthy, Flask attend que le healthcheck de db passe au vert avant de démarrer — ça évite l'erreur classique « connexion refusée » au premier lancement.
+      db:
+        condition: service_healthy
+    expose: #Rend le port 5000 accessible aux autres conteneurs du même réseau (ici, nginx), mais pas à l'extérieur de la machine hôte. C'est différent de ports: (utilisé par nginx) qui publie un port vers l'extérieur. Flask n'a pas besoin d'être joignable depuis le navigateur — seul nginx doit lui parler.
+      - "5000"
+
+  nginx: #Image officielle Nginx, variante alpine (basée sur Alpine Linux) — beaucoup plus légère que l'image standard (quelques Mo au lieu de centaines de Mo).
+    image: nginx:alpine
+    restart: always
+    ports: #Ici c'est ports: et non expose: — ce mapping hôte:conteneur rend le port 80 accessible depuis l'extérieur du conteneur, c'est-à-dire depuis ton navigateur sur localhost.
+      - "80:80"
+    volumes: #Ici, ce n'est pas un volume nommé comme pour db_data, mais un bind mount : le fichier nginx.conf du dossier projet (./nginx.conf) est injecté directement dans le conteneur à l'emplacement où Nginx lit sa config. C'est ce fichier qui définira le reverse proxy vers flask:5000.
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on: #Ici, un depends_on simple suffit — Nginx n'a pas besoin d'un healthcheck sophistiqué sur Flask, il retentera simplement la connexion si elle échoue au premier appel. 
+      - flask 
+
+volumes: #Déclare le volume nommé db_data utilisé par db. Cette déclaration à la racine (en dehors de services:) est ce qui permet à Docker de créer un volume géré et persistant, indépendant du cycle de vie des conteneurs — il survit à un docker compose down (mais serait supprimé par docker compose down -v, le flag -v détruisant aussi les volumes).
+  db_data:
