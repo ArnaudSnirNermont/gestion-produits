@@ -29,18 +29,25 @@ def liste():
     return jsonify(resultat)
     #jsonify convertit directement la liste de dictionnaires Python construite par compréhension en réponse JSON avec le bon Content-Type: application/json
 
-@main.route("/ajouter", methods=["POST"])
+@main.route("/ajouter", methods=["POST","GET"])
+# Obligé d'utiliser les 2 méthodes car redirect redirige sur une route GET
 def ajouter():
-    nom   = request.form.get("nom", "").strip()
-    prix  = request.form.get("prix", 0)
-    stock = request.form.get("stock", 0)
+    if request.method == "POST":
+        nom   = request.form.get("nom", "").strip()
+        prix  = request.form.get("prix", 0)
+        stock = request.form.get("stock", 0)
 
-    if not nom:
-        flash("Le nom est obligatoire.", "danger")
-        return jsonify({"Msg" :"Echec de l'ajout du produit"}, "error")
+        if not nom:
+            flash("Le nom est obligatoire.", "danger")
+            return redirect(url_for("main.ajouter"))
+            # return jsonify({"Msg" :"Echec de l'ajout du produit"}, "error")
 
-    produit = Produit(nom=nom, prix=float(prix), stock=int(stock))
-    db.session.add(produit)
-    db.session.commit()
-    #flash(f"Produit « {nom} » ajouté avec succès.", "success")
-    return jsonify({"Produit ajouté avec succès" : f"{nom}"}, "success")
+        produit = Produit(nom=nom, prix=float(prix), stock=int(stock))
+        db.session.add(produit)
+        db.session.commit()
+        flash(f"Produit « {nom} » ajouté avec succès.", "success")
+        return redirect(url_for("main.liste_produits"))
+
+    return render_template("formulaire.html")
+    # #flash(f"Produit « {nom} » ajouté avec succès.", "success")
+    # return jsonify({"Produit ajouté avec succès" : f"{nom}"}, "success")
