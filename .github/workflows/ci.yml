@@ -1,0 +1,48 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: ["**"]  #à chaque push sur n'importe quelle branche".
+  pull_request:
+    branches: ["main"] #déclenche aussi quand une PR est ouverte/mise à jour vers main (affiche directement le statut dans l'interface de la PR : endroit le plus visible)
+jobs: #chaque job (lint, test, build) tourne dans un environnement isolé et neuf (une VM Ubuntu fraîche à chaque fois), en parallèle par défaut sauf dépendance explicite.
+  lint:
+    runs-on: ubuntu-latest #machine virtuelle fournie gratuitement par GitHub pour exécuter le job
+    steps:
+      - uses: actions/checkout@v4 #action réutilisable officielle qui clone le dépo dans la VM — sans elle, la VM serait vide et n'aurait pas accès au code
+      - uses: actions/setup-python@v5 #installe la version de Python demandée sur la VM
+        with:
+          python-version: "3.11"
+      - name: Installer flake8
+        run: pip install -r requirements-dev.txt
+      - name: Lancer flake8
+        run: flake8 app/ --max-line-length=100
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Installer les dépendances
+        run: pip install -r requirements-dev.txt
+      - name: Lancer pytest
+        env:
+          DATABASE_URL: "sqlite:///:memory:" #création d'une base de test en RAM et sans serveur de BDD
+          #1-pytest démarre
+          #2-create_app() est appelé, avec DATABASE_URL = sqlite:///:memory:
+          #3. db.create_all() crée les tables (produit, etc.) — mais dans cette base SQLite vide en RAM
+          #4. Les tests insèrent des données de test, font des requêtes...
+          #5. pytest se termine → la base SQLite en mémoire disparaît complètement
+        run: pytest
+
+  build:
+    needs: [lint, test] #force ce job à attendre que lint et test réussissent tous les 2 avant de démarrer. Si l'un échoue, build ne se lance même pas — économie de temps de calcul, et logique claire ("pas la peine de builder si le code est cassé").
+    if: github.ref == 'refs/heads/main' 
+    #condition qui restreint ce job uniquement aux push sur main correspond exactement à la demande "à chaque merge sur main". github.ref contient la référence de la branche courante dans le contexte du run.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build de l'image Docker
+        run: docker build -t gestion-produits .
