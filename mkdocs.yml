@@ -1,0 +1,26 @@
+site_name: Gestion Produits — Documentation technique
+site_description: Documentation du projet BTS CIEL - Gestion Produits
+repo_url: https://github.com/ArnaudSnirNermont/gestion-produits
+repo_name: gestion-produits
+
+theme:
+  name: material
+  language: fr
+  palette:
+    primary: indigo
+  features:
+    - navigation.tabs
+    - navigation.top
+    - content.code.copy
+
+nav:
+  - Accueil: index.md
+  - Architecture: architecture.md
+  - API: api.md
+  - Modèle de données: modele.md
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true
