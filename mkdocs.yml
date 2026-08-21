@@ -18,6 +18,7 @@ nav:
   - Architecture: architecture.md
   - API: api.md
   - Modèle de données: modele.md
+  - Cahier de recette: cahier-recettes.md
 
 markdown_extensions:
   - admonition
